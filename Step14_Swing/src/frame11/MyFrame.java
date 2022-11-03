@@ -2,14 +2,17 @@ package frame11;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-public class MyFrame extends JFrame {
+public class MyFrame extends JFrame implements ActionListener{
    //필드
    JTextField tf_num1, tf_num2;
    JLabel label_result;
@@ -27,7 +30,7 @@ public class MyFrame extends JFrame {
       add(topPanel, BorderLayout.NORTH);
       
       //JTextField 객체를 만들에서 JPanel 에 추가하기 
-      JTextField tf_num1=new JTextField(10);
+      tf_num1=new JTextField(10);
       topPanel.add(tf_num1);
       //기능 버튼 객체를 만들어서 JPanel 에 추가하기
       JButton plusBtn=new JButton("+");
@@ -39,14 +42,20 @@ public class MyFrame extends JFrame {
       topPanel.add(multiBtn);
       topPanel.add(divideBtn);
       //두번째 JTextField  만들어서 페널에 추가 하기 
-      JTextField tf_num2=new JTextField(10);
+      tf_num2=new JTextField(10);
       topPanel.add(tf_num2);
       //JLabel
       JLabel label1=new JLabel("=");
-      JLabel label_result=new JLabel("0");
+      label_result=new JLabel("0");
       //페널에 레이블 추가하기
       topPanel.add(label1);
       topPanel.add(label_result);
+      
+      //버튼에 리스너 등록하기
+      plusBtn.addActionListener(this);
+      minusBtn.addActionListener(this);
+      multiBtn.addActionListener(this);
+      divideBtn.addActionListener(this);
       
    }
    
@@ -60,4 +69,43 @@ public class MyFrame extends JFrame {
       frame.setBounds(100, 100, 500, 500);
       frame.setVisible(true);
    }
+
+   @Override
+   public void actionPerformed(ActionEvent e) {
+      
+      try {
+         Thread.sleep(10000);
+      } catch (InterruptedException e1) {
+         // TODO Auto-generated catch block
+         e1.printStackTrace();
+      }
+      
+      try {
+         //1. 입력한 문자열을 읽어와서 숫자로 바꿔준다.
+         double num1=Double.parseDouble(tf_num1.getText());
+         double num2=Double.parseDouble(tf_num2.getText());
+         //2. 어떤 버튼을 눌렀는지 알아내서 적절한 연산을 해서 결과를 얻어낸다.
+         String command=e.getActionCommand(); // "+" "-" "*" "/" 
+         //연산의 결과를 담을 지역변수를 미리 만들어 놓는다.
+         double result=0;
+         if(command.equals("+")) {
+            result=num1+num2;
+         }else if(command.equals("-")) {
+            result=num1-num2;
+         }else if(command.equals("*")) {
+            result=num1*num2;
+         }else if(command.equals("/")) {
+            result=num1/num2;
+         }
+         //3. 연산의 결과를 출력한다.
+         //연산의 결과를 문자열로 만든다.
+         String resultNum=Double.toString(result);
+         label_result.setText(resultNum);
+      }catch(NumberFormatException nfe) {
+         JOptionPane.showMessageDialog(this, "숫자 형식으로 입력해 주세요.");
+         tf_num1.setText("");
+         tf_num2.setText("");
+      }
+   }
 }
+
