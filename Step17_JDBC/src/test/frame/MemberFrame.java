@@ -3,6 +3,8 @@ package test.frame;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -18,7 +20,8 @@ import javax.swing.table.DefaultTableModel;
 import test.dao.MemberDao;
 import test.dto.MemberDto;
 
-public class MemberFrame extends JFrame implements ActionListener{
+public class MemberFrame extends JFrame 
+            implements ActionListener, PropertyChangeListener{
    //필드
    JTextField inputName, inputAddr;
    DefaultTableModel model;
@@ -57,7 +60,18 @@ public class MemberFrame extends JFrame implements ActionListener{
       //칼럼명을 String[] 에 순서대로 준비
       String[] colNames= {"번호", "이름", "주소"};
       //테이블에 연결할 모델객체(테이블에 출력할 데이터를 가지고 있는 객체)
-      model=new DefaultTableModel(colNames, 0); 
+      model=new DefaultTableModel(colNames, 0) {
+         @Override
+         public boolean isCellEditable(int row, int column) {
+            // 0 번째 칼럼은 수정 불가능 하도록 false 를 리턴하고 
+            if(column == 0 ) {
+               return false;
+            }else { // 나머지 칼럼은 수정 가능 하도록 true 를 리턴한다.
+               return true;
+            }
+         }
+      }; 
+      
       //모델을 테이블에 연결한다.
       table.setModel(model);
       //스크롤이 가능 하도록 테이블을 JScrollPane 에 감싼다.
@@ -70,6 +84,8 @@ public class MemberFrame extends JFrame implements ActionListener{
       deleteBtn.addActionListener(this);
       
       displayMember();
+   
+      table.addPropertyChangeListener(this);
    }
    
    //테이블에 회원 목록을 출력하는 메소드
@@ -133,15 +149,47 @@ public class MemberFrame extends JFrame implements ActionListener{
             JOptionPane.showMessageDialog(this, "삭제할 row 를 선택하세요!");
             return;
          }
-         //2. DefaultTableModel 에서 해당 인덱스의 table row 에서 삭제할 회원의 번호를 읽어와서(model 활용)
-         int num =(int)model.getValueAt(rowIndex, 0);
-         //3. MemberDao 객체를 이용해서 DB 에서 삭제하고
-         new MemberDao().delete(num);
-         //4. 새로 고침하기 
-         displayMember();
+         
+         int result=JOptionPane.showConfirmDialog(this, "선택된 row 를 삭제 하시겠습니까?");
+         //만일 예를 눌렀다면 
+         if(result == JOptionPane.YES_OPTION) {
+            //2. DefaultTableModel 에서 해당 인덱스의 table row 에서 삭제할 회원의 번호를 읽어와서(model 활용)
+            int num =(int)model.getValueAt(rowIndex, 0);
+            //3. MemberDao 객체를 이용해서 DB 에서 삭제하고
+            new MemberDao().delete(num);
+            //4. 새로 고침하기 
+            displayMember();
+         }
       }
       
    }
+   
+   //table 에 특정 이벤트가 발생했을때 호출되는 메소드 
+   @Override
+   public void propertyChange(PropertyChangeEvent evt) {
+      System.out.println("property change!");
+      System.out.println("property name:"+evt.getPropertyName());
+      
+      System.out.println("isEditing:"+table.isEditing());
+      
+      //만일 테이블의 수정 사항을 DB 에 수정 반영할 적당한 시점이 되면
+      if(evt.getPropertyName().equals("tableCellEditor") && !table.isEditing()) {
+         //현재 선택된 row 의 정보를 DB 에 수정 반영 한다. 
+         //변화된 값을 읽어와서 DB 에 반영한다. 
+         //수정된 칼럼에 있는 row  전체의 값을 읽어온다. 
+         int selectedIndex=table.getSelectedRow();
+         int num=(int)model.getValueAt(selectedIndex, 0);
+         String name=(String)model.getValueAt(selectedIndex, 1);
+         String addr=(String)model.getValueAt(selectedIndex, 2);
+         //수정할 회원의 정보를 MemberDto 객체에 담고 
+         MemberDto dto=new MemberDto(num, name, addr);
+         //DB에 저장하기 
+         new MemberDao().update(dto);
+         //선택된 row clear
+         table.clearSelection();
+      }
+   }
 }
+
 
 
